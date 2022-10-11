@@ -1,0 +1,20 @@
+/*
+ * This file is part of the YesWiki Extension multideletepages.
+ *
+ * Authors : see README.md file that was distributed with this source code.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+#pageAdmin .pageList {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto auto;
+  column-gap: 10px;
+  row-gap: 10px;
+}
+#pageAdmin .pageList .titlePageList {
+  font-weight: bold;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 5px;
+}
