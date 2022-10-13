@@ -13,7 +13,7 @@
         class="pull-right btn btn-xs btn-primary" 
         @click="loadPages" 
         data-tooltip="toogle" 
-        title="Rafraichir la liste">
+        title="{{ _t('MULTIDELETEPAGES_REFRESH_LIST') }}">
         <i class="fas fa-redo-alt"></i>
     </div>
     <div v-if="ready" class="pull-right" style="max-width: 300px;">
@@ -21,27 +21,27 @@
         <div class="btn btn-xs btn-danger" 
             @click="selectCustom" 
             data-tooltip="toogle" 
-            title="Sélection custom">
+            title="{{ _t('MULTIDELETEPAGES_CUSTOM_SELECT') }}">
             <i class="fa fa-filter"></i>
         </div>
     </div>
-    <h1>Gestion des pages en trop</h1>
+    <h1>{{ _t('MULTIDELETEPAGES_TITLE') }}</h1>
     <div class="clearfix"></div>
     <div v-if="message.length > 0" v-html="message" :class="messageClass"></div>
     <div class="pageList" v-if="ready">
-    <div class="titlePageList">Nom</div>
-    <div class="titlePageList">Date</div>
-    <div class="titlePageList">Propriétaire</div>
-    <div class="titlePageList">Utilisateur</div>
+    <div class="titlePageList">{{ _t('MULTIDELETEPAGES_NAME') }}</div>
+    <div class="titlePageList">{{ _t('MULTIDELETEPAGES_DATE') }}</div>
+    <div class="titlePageList">{{ _t('MULTIDELETEPAGES_OWNER') }}</div>
+    <div class="titlePageList">{{ _t('MULTIDELETEPAGES_USER') }}</div>
     <div class="titlePageList"></div>
     <div class="archive-item archive-item-title">
         <button 
             class="btn btn-xs btn-warning btn-wrap"
             @click="deleteSelectedPages"
             data-toggle="tooltip"
-            title="Supprimer la séection"
+            title="{{ _t('MULTIDELETEPAGES_DELETE_SELECTION') }}"
             :disabled="updating">
-        Suppr. select.
+        {{ _t('MULTIDELETEPAGES_DELETE_SELECTION_SHORT') }}
         </button>
     </div>
     <template v-for="page in pages">
@@ -65,7 +65,7 @@
                 class="btn btn-xs btn-danger" 
                 @click="getDeleteTokenThenDelete(page)" 
                 data-tooltip="toggle" 
-                title="Supprimer"
+                title="{{ _t('MULTIDELETEPAGES_DELETE') }}"
                 :disabled="updating">
                 <i class="fa fa-trash"></i>
             </button>
