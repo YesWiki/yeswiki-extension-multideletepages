@@ -1,6 +1,6 @@
 # Contributing rules for the repository
 
-To contribute into the current repository https://github.com/YesWiki/yeswiki-extension-advancedsearch, you should follow these rules.
+To contribute into the current repository https://github.com/YesWiki/yeswiki-extension-multideletepages, you should follow these rules.
 
 ## Languages
 

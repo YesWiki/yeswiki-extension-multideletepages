@@ -12,7 +12,7 @@ _Il est possible d'écrire en Français._
 Describe what is wanted to do.
 
 **Context**
-Give description of the context that creates the need (_yeswiki revision, yeswiki rekease, associated issue_)
+Give description of the context that creates the need (_yeswiki revision, yeswiki release, associated issue_)
 
 **Requirements**
 If available, copy the requirements the pull-request must follow.
