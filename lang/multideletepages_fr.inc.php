@@ -12,20 +12,21 @@
 return [
 
     // actions/FilescleaningAction.php
+    'MULTIDELETEPAGES_ASSOCIATED_TO_TAG' => 'Associé à une page',
+    'MULTIDELETEPAGES_CHECK' => 'Vérifier',
+    'MULTIDELETEPAGES_CHECKING_FILES' => 'Vérification en cours',
     'MULTIDELETEPAGES_FILES_DIR_LISTING' => 'Liste des fichiers du dossier files',
+    'MULTIDELETEPAGES_IS_DELETED' => 'supprimé',
+    'MULTIDELETEPAGES_IS_USED' => 'utilisé',
+    'MULTIDELETEPAGES_IS_LATEST_FILE_REVISION' => 'fichier le plus récent',
+    'MULTIDELETEPAGES_IS_NOT_USED' => 'non utilisé',
     'MULTIDELETEPAGES_LOADING_FILES' => 'Chargement des fichiers',
     'MULTIDELETEPAGES_NAME' => 'Media',
     'MULTIDELETEPAGES_PAGE_TAG' => 'Page',
     'MULTIDELETEPAGES_PAGE_VERSION' => 'version',
     'MULTIDELETEPAGES_SELECT_TYPES' => 'Types',
     'MULTIDELETEPAGES_STATUS' => 'Status',
-    'MULTIDELETEPAGES_STATUS0_USED' => 'Utilisé',
-    'MULTIDELETEPAGES_STATUS1_PREVIOUS' => 'Ancienne version en usage',
-    'MULTIDELETEPAGES_STATUS2_NOT_USED' => 'Non utilisé',
-    'MULTIDELETEPAGES_STATUS3_NOT_ASSOCIATED_TO_TAG' => 'Associé à aucune page',
-    'MULTIDELETEPAGES_STATUS4_ASSOCIATED_TO_TAG' => 'Associé à une page - usage à vérifier',
-    'MULTIDELETEPAGES_STATUS5_ASSOCIATED_TO_TAG_PREVIOUS_REV' => 'Associé à une page, ancienne version - usage à vérifier',
-    'MULTIDELETEPAGES_STATUS6_TRASH' => 'Associé à une page, corbeille - usage à vérifier',
+    'MULTIDELETEPAGES_TO_CHECK' => 'à vérifier',
     'MULTIDELETEPAGES_UPLOAD_TIME' => 'Date de téléversement',
 
    // templates/multideletedpages.twig

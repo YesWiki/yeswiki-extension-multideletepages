@@ -8,7 +8,7 @@
  */
 
 .files-cleaning-table-status {
-  min-width: 300px;
+  min-width: 100px;
 }
 .files-cleaning-table-break-word-column {
     overflow-wrap: break-word;
@@ -17,8 +17,5 @@
 @media (max-width: 801px){
   .files-cleaning-table-break-word-column {
     max-width: 120px;
-  }
-  .files-cleaning-table-status {
-    min-width: 200px;
   }
 }

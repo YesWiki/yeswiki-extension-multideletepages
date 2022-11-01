@@ -12,20 +12,21 @@
 return [
 
     // actions/FilescleaningAction.php
+    'MULTIDELETEPAGES_ASSOCIATED_TO_TAG' => 'Associated to a page',
+    'MULTIDELETEPAGES_CHECK' => 'Check',
+    'MULTIDELETEPAGES_CHECKING_FILES' => 'Checking files',
     'MULTIDELETEPAGES_FILES_DIR_LISTING' => 'List files directory files',
+    'MULTIDELETEPAGES_IS_DELETED' => 'supprimé',
+    'MULTIDELETEPAGES_IS_LATEST_FILE_REVISION' => 'lastest file',
+    'MULTIDELETEPAGES_IS_USED' => 'used',
+    'MULTIDELETEPAGES_IS_NOT_USED' => 'not used',
     'MULTIDELETEPAGES_LOADING_FILES' => 'Loading files',
     'MULTIDELETEPAGES_NAME' => 'Name',
     'MULTIDELETEPAGES_PAGE_TAG' => 'Page',
     'MULTIDELETEPAGES_PAGE_VERSION' => 'revision',
     'MULTIDELETEPAGES_SELECT_TYPES' => 'Types',
     'MULTIDELETEPAGES_STATUS' => 'Status',
-    'MULTIDELETEPAGES_STATUS0_USED' => 'Used',
-    'MULTIDELETEPAGES_STATUS1_PREVIOUS' => 'Used in old revision',
-    'MULTIDELETEPAGES_STATUS2_NOT_USED' => 'Not used',
-    'MULTIDELETEPAGES_STATUS3_NOT_ASSOCIATED_TO_TAG' => 'Not associated to a page',
-    'MULTIDELETEPAGES_STATUS4_ASSOCIATED_TO_TAG' => 'Associated to a page - usage to check',
-    'MULTIDELETEPAGES_STATUS5_ASSOCIATED_TO_TAG_PREVIOUS_REV' => 'Associated to a page, previsou revision -usage to check',
-    'MULTIDELETEPAGES_STATUS6_TRASH' => 'Associated to a page, trash - usage to check',
+    'MULTIDELETEPAGES_TO_CHECK' => 'to check',
     'MULTIDELETEPAGES_UPLOAD_TIME' => 'Upload time',
 
    // templates/multideletedpages.twig

@@ -12,13 +12,13 @@
 <div class="files-cleaning-container">
     <translations>
       <template #loadingfiles>{{ _t('MULTIDELETEPAGES_LOADING_FILES') }}</template>
-      <template #statuszero>{{ _t('MULTIDELETEPAGES_STATUS0_USED') }}</template>
-      <template #statusone>{{ _t('MULTIDELETEPAGES_STATUS1_PREVIOUS') }}</template>
-      <template #statustwo>{{ _t('MULTIDELETEPAGES_STATUS2_NOT_USED') }}</template>
-      <template #statusthree>{{ _t('MULTIDELETEPAGES_STATUS3_NOT_ASSOCIATED_TO_TAG') }}</template>
-      <template #statusfour>{{ _t('MULTIDELETEPAGES_STATUS4_ASSOCIATED_TO_TAG') }}</template>
-      <template #statusfive>{{ _t('MULTIDELETEPAGES_STATUS5_ASSOCIATED_TO_TAG_PREVIOUS_REV') }}</template>
-      <template #statussix>{{ _t('MULTIDELETEPAGES_STATUS6_TRASH') }}</template>
+      <template #checkingfiles>{{ _t('MULTIDELETEPAGES_CHECKING_FILES') }}</template>
+      <template #statusassociatedtotag>{{ _t('MULTIDELETEPAGES_ASSOCIATED_TO_TAG') }}</template>
+      <template #statusisdeleted>{{ _t('MULTIDELETEPAGES_IS_DELETED') }}</template>
+      <template #statusislastestfilerevision>{{ _t('MULTIDELETEPAGES_IS_LATEST_FILE_REVISION') }}</template>
+      <template #statusisnotused>{{ _t('MULTIDELETEPAGES_IS_NOT_USED') }}</template>
+      <template #statusisused>{{ _t('MULTIDELETEPAGES_IS_USED') }}</template>
+      <template #statustocheck>{{ _t('MULTIDELETEPAGES_TO_CHECK') }}</template>
     </translations>
     <h2>{{ _t('MULTIDELETEPAGES_FILES_DIR_LISTING') }}</h2>
     <div>
@@ -39,6 +39,9 @@
         <template #pageversion>{{ _t('MULTIDELETEPAGES_PAGE_VERSION') }}</template>
       </file-cleaning-table>
       <spinner-loader v-if="!ready" :height="500"><spinner-loader>
+    </div>
+    <div>
+      <button v-if="isToCheck" @click="checkFiles" class="btn btn-info" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_CHECK') }}</button>
       <div v-if="message.length > 0" v-html="message" :class="messageClass"></div>
     </div>
 </div>

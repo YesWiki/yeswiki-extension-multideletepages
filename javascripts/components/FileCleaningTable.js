@@ -36,6 +36,14 @@ export default {
         attachReactiveCheckbox: function(){
             let datatable = this.dataTable;
             datatable.rows().every((rowIdx)=>{
+                // tooltips
+                datatable.cell(rowIdx,1).node().querySelectorAll('i[data-toggle="tooltip"]').forEach((item)=>{
+                    if (!item.classList.contains('tooltip-created')){
+                        item.classList.add('tooltip-created')
+                        $(item).tooltip({trigger:'hover focus click'})
+                    }
+                })
+                // checkboxes
                 var input = datatable.cell(rowIdx,0).node().getElementsByTagName('input')[0]
                 if (!input.classList.contains('vuejsEventInitialized')){
                     input.classList.add('vuejsEventInitialized')
@@ -55,8 +63,10 @@ export default {
         },
         formatAFile: function(file){
             return {
-                status: file.hasOwnProperty('status') ? file.status : "",
                 name: file.name || file.realname || "",
+                isDeleted: file.isDeleted,
+                isUsed: file.isUsed,
+                isLatestFileRevision: file.isLatestFileRevision,
                 realname: file.realname || "",
                 pagetags: file.pagetags || [],
                 uploadtime: file.uploadtime || "",
@@ -88,38 +98,30 @@ export default {
                             orderable: false
                         },
                         {
-                            data:"status",
+                            data:"isDeleted",
                             title: this.fromSlot("status"),
-                            render: (status) =>{
-                                let statusKey = this.$root.sourceStatus[status]
-                                if (typeof status != "number" || statusKey == undefined){
-                                    return "error";
-                                } else {
-                                    let color = "";
-                                    switch (status) {
-                                        case 0:
-                                            color = "green";
-                                            break;
-                                        case 2:
-                                            color = "red";
-                                            break;
-                                    
-                                        case 6:
-                                            color = "orange";
-                                            break;
-                                    
-                                        default:
-                                            break;
-                                    }
-                                    if (color.length > 0){
-                                        return '<span style="color:'+color+';">'+this.$root.t("status"+statusKey)+'</span>';
-                                    } else {
-                                        return this.$root.t("status"+statusKey);
-                                    }
+                            render: (isDeleted,idx,file) =>{
+                                let outputs = [];
+                                if (file.isDeleted){
+                                    outputs.push(`<i style="color:red;" class="fas fa-trash-alt" data-toggle="tooltip" title="${this.$root.t('statusisdeleted')}"></i>`)
                                 }
+                                if (file.associatedPageTag.length > 0){
+                                    outputs.push(`<i class="fas fa-link" data-toggle="tooltip" title="${this.$root.t('statusassociatedtotag')}"></i>`)
+                                }
+                                if (file.isUsed){
+                                    outputs.push(`<i style="color:green;" class="fas fa-thumbs-up" data-toggle="tooltip" title="${this.$root.t('statusisused')}"></i>`)
+                                } else if (file.isUsed === null) {
+                                    outputs.push(`<i style="color:orange;" class="fas fa-history" data-toggle="tooltip" title="${this.$root.t('statustocheck')}"></i>`)
+                                } else {
+                                    outputs.push(`<i class="fas fa-thumbs-down" data-toggle="tooltip" title="${this.$root.t('statusisnotused')}"></i>`)
+                                }
+                                if (file.isLatestFileRevision){
+                                    outputs.push(`<i class="far fa-clock" data-toggle="tooltip" title="${this.$root.t('statusislastestfilerevision')}"></i>`)
+                                }
+                                return outputs.join(' ');
                             },
                             className: "files-cleaning-table-status",
-                            contentPadding: "mmmmmmmmmmmmmmmm"
+                            contentPadding: "mmmmmmmmmmmm"
                         },
                         {
                             data:"name",
@@ -135,7 +137,7 @@ export default {
                             title:this.fromSlot("pagetag")+` (${this.fromSlot("pageversion")})`,
                             render: function ( tags, idx, file ) {
                                 return tags.map((tag)=>{
-                                    let rev = (file.status == 0 && file.associatedPageTag == tag && file.pageversion) ? ` (${file.pageversion})`: '';
+                                    let rev = (file.isUsed == 0 && file.associatedPageTag == tag && file.pageversion) ? ` (${file.pageversion})`: '';
                                     return `<a class="modalbox" data-iframe="1" data-size="modal-lg" href="${wiki.url(tag+'/iframe')}" title="${tag}">${tag}${rev}</a>`;
                                 }).join('');
                             },
@@ -145,7 +147,6 @@ export default {
                 },
                 order:[
                     [4,'desc'], // pagetag
-                    [1,'desc'], // status
                     [2,'desc'], // uploadtime
                 ],
                 "scrollX": true

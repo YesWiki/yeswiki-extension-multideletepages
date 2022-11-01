@@ -19,13 +19,9 @@ use YesWiki\Wiki;
 class FilesService
 {
     public const EXCLUDED_FILENAMES = ["README.md"];
-    public const FILE_STATUS_CURRENTLY_USED = 0;
-    public const FILE_STATUS_PREVIOUSLY_USED = 1;
-    public const FILE_STATUS_NOT_USED = 2;
-    public const FILE_STATUS_NO_ASSOCIATED_TAG = 3;
-    public const FILE_STATUS_WITH_TAG_NOT_VERIFIED = 4;
-    public const FILE_STATUS_PREVIOUS_REVISION_WITH_TAG_NOT_VERIFIED = 5;
-    public const FILE_STATUS_TRASH_WITH_TAG_NOT_VERIFIED = 6;
+    public const STATUS_UNKNOWN = 2;
+    public const STATUS_FALSE = 0;
+    public const STATUS_TRUE = 1;
 
     protected $attach;
     protected $pageManager;
@@ -80,26 +76,28 @@ class FilesService
                     $newFormattedFiles = $file;
                     $newFormattedFiles['associatedPageTag'] = $tag;
                     $newFormattedFiles['pageTags'] = [];
+                    $newFormattedFiles['isDeleted'] = ($mode == "trash") ? self::STATUS_TRUE : self::STATUS_FALSE;
+                    $newFormattedFiles['isUsed'] = self::STATUS_UNKNOWN;
                     $fullFileName = "{$file['name']}.{$file['ext']}";
                     // set status
                     if ($mode == "trash") {
-                        $newFormattedFiles['status'] = self::FILE_STATUS_TRASH_WITH_TAG_NOT_VERIFIED;
+                        $newFormattedFiles['isLatestFileRevision'] = self::STATUS_UNKNOWN;
                     } elseif (!isset($previousFilesNames[$fullFileName])) {
                         $previousFilesNames[$fullFileName] = $file;
-                        $newFormattedFiles['status'] = self::FILE_STATUS_WITH_TAG_NOT_VERIFIED;
+                        $newFormattedFiles['isLatestFileRevision'] = self::STATUS_TRUE;
                     } elseif ($previousFilesNames[$fullFileName]['dateupload'] < $file['dateupload']) {
                         foreach ($formattedFiles as $idx => $otherFile) {
                             if ($otherFile['associatedPageTag'] == $tag &&
                                 $otherFile['name'] == $file['name'] &&
-                                $otherFile['status'] == self::FILE_STATUS_WITH_TAG_NOT_VERIFIED
+                                $otherFile['isLatestFileRevision'] == self::STATUS_TRUE
                             ) {
-                                $formattedFiles[$idx]['status'] = self::FILE_STATUS_PREVIOUS_REVISION_WITH_TAG_NOT_VERIFIED;
+                                $formattedFiles[$idx]['isLatestFileRevision'] = self::STATUS_FALSE;
                             }
                         }
                         $previousFilesNames[$fullFileName] = $file;
-                        $newFormattedFiles['status'] = self::FILE_STATUS_WITH_TAG_NOT_VERIFIED;
+                        $newFormattedFiles['isLatestFileRevision'] = self::STATUS_TRUE;
                     } else {
-                        $newFormattedFiles['status'] = self::FILE_STATUS_PREVIOUS_REVISION_WITH_TAG_NOT_VERIFIED;
+                        $newFormattedFiles['isLatestFileRevision'] = self::STATUS_FALSE;
                     }
                     $formattedFiles[] = $newFormattedFiles;
                 }
@@ -109,9 +107,11 @@ class FilesService
             $newFormattedFiles = $file;
             $newFormattedFiles['associatedPageTag'] = "";
             $newFormattedFiles['pageTags'] = $file['pageTags'];
-            $newFormattedFiles['status'] = (empty($file['pageTags']))
-                ? self::FILE_STATUS_NOT_USED
-                : self::FILE_STATUS_CURRENTLY_USED ;
+            $newFormattedFiles['isDeleted'] = self::STATUS_FALSE;
+            $newFormattedFiles['isLatestFileRevision'] = self::STATUS_UNKNOWN;
+            $newFormattedFiles['isUsed'] = (empty($file['pageTags']))
+                ? self::STATUS_FALSE
+                : self::STATUS_TRUE ;
             $formattedFiles[] = $newFormattedFiles;
         }
         return $formattedFiles;
