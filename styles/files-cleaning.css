@@ -1,0 +1,24 @@
+/*
+ * This file is part of the YesWiki Extension multideletepages.
+ *
+ * Authors : see README.md file that was distributed with this source code.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+.files-cleaning-table-status {
+  min-width: 300px;
+}
+.files-cleaning-table-break-word-column {
+    overflow-wrap: break-word;
+    max-width: 220px;
+}
+@media (max-width: 801px){
+  .files-cleaning-table-break-word-column {
+    max-width: 120px;
+  }
+  .files-cleaning-table-status {
+    min-width: 200px;
+  }
+}

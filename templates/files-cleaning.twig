@@ -1,0 +1,44 @@
+{# # This file is part of the YesWiki Extension multideletepages.
+# Authors : see README.md file that was distributed with this source code.
+# For the full copyright and license information, please view the LICENSE
+# file that was distributed with this source code. #}
+
+{{ include_javascript('javascripts/vendor/datatables-full/jquery.dataTables.min.js') }}
+{{ include_css('styles/vendor/datatables-full/dataTables.bootstrap.min.css') }}
+{{ include_javascript('javascripts/vendor/vue/vue.js') }}
+{{ include_javascript('tools/multideletepages/javascripts/files-cleaning.js',false,true) }}
+{{ include_css('tools/multideletepages/styles/files-cleaning.css',) }}
+
+<div class="files-cleaning-container">
+    <translations>
+      <template #loadingfiles>{{ _t('MULTIDELETEPAGES_LOADING_FILES') }}</template>
+      <template #statuszero>{{ _t('MULTIDELETEPAGES_STATUS0_USED') }}</template>
+      <template #statusone>{{ _t('MULTIDELETEPAGES_STATUS1_PREVIOUS') }}</template>
+      <template #statustwo>{{ _t('MULTIDELETEPAGES_STATUS2_NOT_USED') }}</template>
+      <template #statusthree>{{ _t('MULTIDELETEPAGES_STATUS3_NOT_ASSOCIATED_TO_TAG') }}</template>
+      <template #statusfour>{{ _t('MULTIDELETEPAGES_STATUS4_ASSOCIATED_TO_TAG') }}</template>
+      <template #statusfive>{{ _t('MULTIDELETEPAGES_STATUS5_ASSOCIATED_TO_TAG_PREVIOUS_REV') }}</template>
+      <template #statussix>{{ _t('MULTIDELETEPAGES_STATUS6_TRASH') }}</template>
+    </translations>
+    <h2>{{ _t('MULTIDELETEPAGES_FILES_DIR_LISTING') }}</h2>
+    <div>
+      <div v-if="!isTypesEmpty(types)" class="input-group mb-3 col-sm-5 pull-left">
+          <div class="input-group-prepend no-flex-shrink">
+              <span class="input-group-text">{{ _t('MULTIDELETEPAGES_SELECT_TYPES') }}&nbsp;:&nbsp;</span>
+          </div>
+          <select class="form-control" v-if="ready" ref="chooseType" v-model="currentType" name="chooseType">
+              <option value=""></option>
+              <option v-for="(label,type) in types" :value="type" v-html="label"></option>
+          </select>
+      </div>
+      <file-cleaning-table class="table-striped table-condensed table-hover" :files="filesToDisplay(files,currentType)" :dom-content-loaded="dOMContentLoaded">
+        <template #status>{{ _t('MULTIDELETEPAGES_STATUS') }}</template>
+        <template #name>{{ _t('MULTIDELETEPAGES_NAME') }}</template>
+        <template #uploadtime>{{ _t('MULTIDELETEPAGES_UPLOAD_TIME') }}</template>
+        <template #pagetag>{{ _t('MULTIDELETEPAGES_PAGE_TAG') }}</template>
+        <template #pageversion>{{ _t('MULTIDELETEPAGES_PAGE_VERSION') }}</template>
+      </file-cleaning-table>
+      <spinner-loader v-if="!ready" :height="500"><spinner-loader>
+      <div v-if="message.length > 0" v-html="message" :class="messageClass"></div>
+    </div>
+</div>

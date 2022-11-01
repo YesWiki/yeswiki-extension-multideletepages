@@ -5,7 +5,7 @@
 
 ## English
 
-Extension [YesWiki](https://yeswiki.net/) to have action `{{multideletepages}}` (needs `doryphore 4.2.4`)
+Extension [YesWiki](https://yeswiki.net/) to have action `{{multideletepages}}` and handler `/filescleaning` (needs `doryphore 4.2.4`)
 
 ### Authors
 
@@ -29,7 +29,7 @@ Developpers of this extension can not be responsible of consequences of the usag
 
 ## Français
 
-Extension [YesWiki](https://yeswiki.net/) pour avoir l'action `{{multideletepages}}` (nécessite `doryphore 4.2.4`)
+Extension [YesWiki](https://yeswiki.net/) pour avoir l'action `{{multideletepages}}` et l'handler `/filescleaning` (nécessite `doryphore 4.2.4`)
 
 ### Auteurs
 
