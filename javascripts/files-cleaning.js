@@ -28,6 +28,7 @@ let appParams = {
             translations: {},
             types: {},
             updating: false,
+            visibleFiles: [],
         };
     },
     computed: {
@@ -37,21 +38,21 @@ let appParams = {
         },
         filesToMoveToTrash: function(){
             return this.selectedFiles.length == 0 ? [] : this.filesToDisplay(this.files,this.currentType).filter((f)=>{
-                return this.selectedFiles.includes(f.realname) && this.checkedFiles.includes(f.realname) && !f.isDeleted;
+                return this.selectedFiles.includes(f.realname) && this.visibleFiles.includes(f.realname) && this.checkedFiles.includes(f.realname) && !f.isDeleted;
             }).map((f)=>{
                 return {realname:f.realname,tag:f.associatedPageTag ||""}
             })
         },
         filesToCheck: function(){
             return this.selectedFiles.length == 0 ? [] : this.filesToDisplay(this.files,this.currentType).filter((f)=>{
-                return this.selectedFiles.includes(f.realname) && !this.checkedFiles.includes(f.realname) && f.associatedPageTag.length > 0;
+                return this.selectedFiles.includes(f.realname) && this.visibleFiles.includes(f.realname) && !this.checkedFiles.includes(f.realname) && f.associatedPageTag.length > 0;
             }).map((f)=>{
                 return {realname:f.realname,tag:f.associatedPageTag}
             })
         },
         filesToRestore: function(){
             return this.selectedFiles.length == 0 ? [] : this.filesToDisplay(this.files,this.currentType).filter((f)=>{
-                return this.selectedFiles.includes(f.realname) && this.checkedFiles.includes(f.realname) && f.isDeleted;
+                return this.selectedFiles.includes(f.realname) && this.visibleFiles.includes(f.realname) && this.checkedFiles.includes(f.realname) && f.isDeleted;
             }).map((f)=>{
                 return {realname:f.realname,tag:f.associatedPageTag || ""}
             })

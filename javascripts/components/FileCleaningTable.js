@@ -27,6 +27,18 @@ export default {
             return this.files.map((file)=>{
                 return this.formatAFile(file);
             })
+        },
+        visibleFiles: function(){
+            if (!this.dataTableInternal) return this.files.map((f)=>f.realname)
+            let files = [];
+            let datatable = this.dataTable
+            datatable.rows().every((rowIdx)=>{
+                var inputint = datatable.cell(rowIdx,0).node().getElementsByTagName('input')[0]
+                if ($(inputint).is(':visible')){
+                    files.push(inputint.dataset.file);
+                }
+            })
+            return files;
         }
     },
     methods: {
@@ -116,25 +128,30 @@ export default {
                         {
                             data:"isDeleted",
                             title: this.fromSlot("status"),
-                            render: (isDeleted,idx,file) =>{
-                                let outputs = [];
-                                if (file.isDeleted){
-                                    outputs.push(`<i style="color:red;" class="fas fa-trash-alt" data-toggle="tooltip" title="${this.$root.t('statusisdeleted')}"></i>`)
-                                }
-                                if (file.associatedPageTag.length > 0){
-                                    outputs.push(`<i class="fas fa-link" data-toggle="tooltip" title="${this.$root.t('statusassociatedtotag')}"></i>`)
-                                }
-                                if (file.isUsed){
-                                    outputs.push(`<i style="color:green;" class="fas fa-thumbs-up" data-toggle="tooltip" title="${this.$root.t('statusisused')}"></i>`)
-                                } else if (file.isUsed === null) {
-                                    outputs.push(`<i style="color:orange;" class="fas fa-history" data-toggle="tooltip" title="${this.$root.t('statustocheck')}"></i>`)
+                            render: (isDeleted,type,file) =>{
+                                if (type === "display"){
+                                    let outputs = [];
+                                    if (file.isDeleted){
+                                        outputs.push(`<i style="color:red;" class="fas fa-trash-alt" data-toggle="tooltip" title="${this.$root.t('statusisdeleted')}"></i>`)
+                                    }
+                                    if (file.associatedPageTag.length > 0){
+                                        outputs.push(`<i class="fas fa-link" data-toggle="tooltip" title="${this.$root.t('statusassociatedtotag')}"></i>`)
+                                    }
+                                    if (file.isUsed){
+                                        outputs.push(`<i style="color:green;" class="fas fa-thumbs-up" data-toggle="tooltip" title="${this.$root.t('statusisused')}"></i>`)
+                                    } else if (file.isUsed === null) {
+                                        outputs.push(`<i style="color:orange;" class="fas fa-history" data-toggle="tooltip" title="${this.$root.t('statustocheck')}"></i>`)
+                                    } else {
+                                        outputs.push(`<i class="fas fa-thumbs-down" data-toggle="tooltip" title="${this.$root.t('statusisnotused')}"></i>`)
+                                    }
+                                    if (file.isLatestFileRevision){
+                                        outputs.push(`<i class="far fa-clock" data-toggle="tooltip" title="${this.$root.t('statusislastestfilerevision')}"></i>`)
+                                    }
+                                    return outputs.join(' ');
                                 } else {
-                                    outputs.push(`<i class="fas fa-thumbs-down" data-toggle="tooltip" title="${this.$root.t('statusisnotused')}"></i>`)
+
+                                    return this.$root.getStatusLabelFromCode(this.$root.getStatusCode(file));
                                 }
-                                if (file.isLatestFileRevision){
-                                    outputs.push(`<i class="far fa-clock" data-toggle="tooltip" title="${this.$root.t('statusislastestfilerevision')}"></i>`)
-                                }
-                                return outputs.join(' ');
                             },
                             className: "files-cleaning-table-status",
                             contentPadding: "mmmmmmmmmmmm"
@@ -233,6 +250,9 @@ export default {
             }).remove()
             this.selectedFiles = this.selectedFiles.filter((fname)=>this.$root.files.some((f)=>fname==f.realname))
         },
+        resetCheckAll: function(){
+            $(this.dataTable.header()).find('input').first().get(0).checked = false;
+        },
         updateCheckboxAfterClick: function (input, toggleValue = true){
             if (input.tagName == "INPUT"){
                 let file = input.dataset.file;
@@ -248,7 +268,7 @@ export default {
                     }
                 }
                 if (toggleValue){
-                    $(this.dataTable.header()).find('input').first().get(0).checked = false;
+                    this.resetCheckAll();
                 }
             }
         },
@@ -258,9 +278,8 @@ export default {
                     if (!input.checked){
                         this.selectedFiles = [];
                     } else {
-                        this.selectedFiles = this.files.map((f)=>f.realname)
+                        this.selectedFiles = this.files.map((f)=>f.realname).filter((fname)=>this.visibleFiles.includes(fname))
                     }
-                        
                     let datatable = this.dataTable;
                     datatable.rows().every((rowIdx)=>{
                         var inputint = datatable.cell(rowIdx,0).node().getElementsByTagName('input')[0]
@@ -310,6 +329,9 @@ export default {
         },
         selectedFiles: function(){
             this.$root.selectedFiles = this.selectedFiles;
+        },
+        visibleFiles: function(){
+            this.$root.visibleFiles = this.visibleFiles;
         },
     },
     template: `
