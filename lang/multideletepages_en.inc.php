@@ -27,6 +27,7 @@ return [
     'MULTIDELETEPAGES_MOVING_FILES_TO_TRASH' => 'Moving files to trash',
     'MULTIDELETEPAGES_NAME' => 'Name',
     'MULTIDELETEPAGES_PAGE_TAG' => 'Page',
+    'MULTIDELETEPAGES_PAGE_TAGS' => 'Usage pages',
     'MULTIDELETEPAGES_PAGE_VERSION' => 'revision',
     'MULTIDELETEPAGES_RESTORE' => 'Restore',
     'MULTIDELETEPAGES_RESTORING' => 'Restoring files',

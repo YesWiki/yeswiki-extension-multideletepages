@@ -149,26 +149,59 @@ export default {
                         },
                         {data:"uploadtime",title:this.fromSlot("uploadtime")},
                         {
-                            data:"pagetags",
+                            data:"associatedPageTag",
                             title:this.fromSlot("pagetag")+` (${this.fromSlot("pageversion")})`,
-                            render: function ( tags, idx, file ) {
-                                let localTags = (typeof tags != "object") ? {} : tags;
-                                if (file.associatedPageTag.length > 0 && !localTags.hasOwnProperty(file.associatedPageTag)){
-                                    localTags[file.associatedPageTag] = [{
-                                        time: 2,
-                                        latest: 2
-                                    }];
+                            render: function ( tag, idx, file ) {
+                                let rev ="";
+                                let params = {};
+                                if (tag.length ==0){
+                                    return '';
+                                } else {
+                                    if (file.isUsed && file.pagetags.hasOwnProperty(tag) ){
+                                        let currentTime = "0";
+                                        file.pagetags[tag].forEach((revision)=>{
+                                            if (typeof revision.time == "string" && (revision.time > currentTime)){
+                                                if (revision.latest === true){
+                                                    currentTime = "9999";
+                                                    rev = '';
+                                                    delete params.time;
+                                                } else {
+                                                    currentTime = revision.time;
+                                                    rev = ` (${revision.time})`;
+                                                    params.time = revision.time;
+                                                }
+                                            }
+                                        })
+
+                                    }
                                 }
-                                return Object.keys(localTags).map((tag)=>{
+                                return `<a class="modalbox" data-iframe="1" data-size="modal-lg" href="${wiki.url(tag+'/iframe',params)}" title="${tag}">${tag}${rev}</a>`;
+                            },
+                            className: "files-cleaning-table-break-word-column"
+                        },
+                        {
+                            data:"pagetags",
+                            title:this.fromSlot("pagetags")+` (${this.fromSlot("pageversion")})`,
+                            render: function ( tags, idx, file ) {
+                                if (typeof tags != "object"){
+                                    return "";
+                                }
+                                return Object.keys(tags).map((tag)=>{
                                     let rev ="";
                                     let params = {};
                                     if (file.isUsed == 1){
-                                        let found = false;
-                                        localTags[tag].forEach((revision)=>{
-                                            if (!found && revision.latest === false && typeof revision.time == "string"){
-                                                found = true;
-                                                rev = ` (${revision.time})`;
-                                                params.time = revision.time;
+                                        let currentTime = "0";
+                                        tags[tag].forEach((revision)=>{
+                                            if (typeof revision.time == "string" && (revision.time > currentTime)){
+                                                if (revision.latest === true){
+                                                    currentTime = "9999";
+                                                    rev = '';
+                                                    delete params.time;
+                                                } else {
+                                                    currentTime = revision.time;
+                                                    rev = ` (${revision.time})`;
+                                                    params.time = revision.time;
+                                                }
                                             }
                                         })
                                     }

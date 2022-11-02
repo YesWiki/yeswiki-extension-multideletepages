@@ -358,7 +358,7 @@ class FilesService
     {
         $uploadDirName =  $this->attach->GetUploadPath();
         $fullfilename = (!empty($file['ext']) && !empty($file['name'])) ? ($file['name'].'.'.$file['ext']) : $file['realname'];
-        $notDeletedRealName = $this->isFileDeleted($file) === self::STATUS_TRUE
+        $notDeletedRealName = ($this->isFileDeleted($file) === self::STATUS_TRUE && !empty($file['name']) && !empty($file['datepage']) && !empty($file['ext']))
             ? (
                 (
                     !empty($file['associatedPageTag']) &&
@@ -371,7 +371,9 @@ class FilesService
             : $file['realname'];
         $tests = [
             'same tag' => [
-                'page' => '{{(attach|section)[^}]*'.preg_quote("file=\"$fullfilename\"", '/'),
+                'page' => [
+                    '{{(attach|section)[^}]*'.preg_quote("file=\"$fullfilename\"", '/')
+                ],
                 'entry' => [
                     'textarea - wikimode' => preg_quote(substr(json_encode("{{attach"), 1, -1), '/').'[^}]*'.preg_quote(substr(json_encode("file=\"$fullfilename\""), 1, -1), '/'),
                 ]

@@ -27,6 +27,7 @@ return [
     'MULTIDELETEPAGES_MOVING_FILES_TO_TRASH' => 'Déplacement de fichiers à la corbeille',
     'MULTIDELETEPAGES_NAME' => 'Media',
     'MULTIDELETEPAGES_PAGE_TAG' => 'Page',
+    'MULTIDELETEPAGES_PAGE_TAGS' => 'Pages d\'utilisation',
     'MULTIDELETEPAGES_PAGE_VERSION' => 'version',
     'MULTIDELETEPAGES_RESTORE' => 'Restaurer',
     'MULTIDELETEPAGES_RESTORING' => 'Restauration de fichier en cours',
