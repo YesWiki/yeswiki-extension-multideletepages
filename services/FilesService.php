@@ -409,7 +409,12 @@ class FilesService
     private function testPage(array $tests, array $page, array &$foundPagesTags, array $file, array $entriesTags)
     {
         $pageTime = $this->attach->convertDate($page['time']);
-        if (empty($file['datepage'])|| ($file['datepage'] <= $pageTime)) {
+        if (!empty($file['datepage'])) {
+            $diff = (intval($pageTime) - intval($file['datepage']));
+            $oneHour = 10000;
+            $isOlder = ($diff >= 0 || ($diff >= -4*$oneHour && ((($diff % $oneHour)+$oneHour) % $oneHour) <= 4)); // small change in hour shifted less than 4h (at 4 s)
+        }
+        if (empty($file['datepage'])||  $isOlder) {
             $localTests = [];
             if (in_array($page['tag'], $entriesTags)) {
                 foreach ($tests['entry'] as $test) {
