@@ -32,7 +32,7 @@ class FilesService
     public function __construct(
         EntryManager $entryManager,
         PageManager $pageManager,
-        Wiki $wiki,
+        Wiki $wiki
     ) {
         $this->entryManager = $entryManager;
         $this->pageManager = $pageManager;
