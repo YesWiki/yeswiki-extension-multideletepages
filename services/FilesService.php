@@ -358,16 +358,8 @@ class FilesService
     {
         $uploadDirName =  $this->attach->GetUploadPath();
         $fullfilename = (!empty($file['ext']) && !empty($file['name'])) ? ($file['name'].'.'.$file['ext']) : $file['realname'];
-        $notDeletedRealName = ($this->isFileDeleted($file) === self::STATUS_TRUE && !empty($file['name']) && !empty($file['datepage']) && !empty($file['ext']))
-            ? (
-                (
-                    !empty($file['associatedPageTag']) &&
-                    strpos($file['realname'], $file['associatedPageTag'].'_') === 0 &&
-                    strpos($file['name'], $file['associatedPageTag'].'_') === false
-                ) ? "{$file['associatedPageTag']}_" : ""
-            )
-                . "{$file['name']}_{$file['datepage']}_{$file['dateupload']}.{$file['ext']}"
-                . (strpos($file['realname'], ".{$file['ext']}_trash") !== false ? "_" : "")
+        $notDeletedRealName = ($this->isFileDeleted($file) === self::STATUS_TRUE)
+            ? preg_replace("/trash\\d{14}$/", "", $file['realname'])
             : $file['realname'];
         $tests = [
             'same tag' => [
@@ -380,7 +372,7 @@ class FilesService
             ],
             'entry' => [
                 'textarea - htmlmode' => preg_quote(substr(json_encode("src=\"$uploadDirName/$notDeletedRealName\""), 1, -1), '/'),
-                'image or file field' => preg_quote("\":\"$notDeletedRealName\"", '/'),
+                'image or file field' => preg_quote(substr(json_encode([""=>$notDeletedRealName]), 2, -1), '/'),
             ],
             'page' => []
         ];
