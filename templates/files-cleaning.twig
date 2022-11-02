@@ -13,6 +13,9 @@
     <translations>
       <template #loadingfiles>{{ _t('MULTIDELETEPAGES_LOADING_FILES') }}</template>
       <template #checkingfiles>{{ _t('MULTIDELETEPAGES_CHECKING_FILES') }}</template>
+      <template #movingfilestotrash>{{ _t('MULTIDELETEPAGES_MOVING_FILES_TO_TRASH') }}</template>
+      <template #restoringfiles>{{ _t('MULTIDELETEPAGES_RESTORING') }}</template>
+      <template #deletingfiles>{{ _t('MULTIDELETEPAGES_DELETING') }}</template>
       <template #statusassociatedtotag>{{ _t('MULTIDELETEPAGES_ASSOCIATED_TO_TAG') }}</template>
       <template #statusisdeleted>{{ _t('MULTIDELETEPAGES_IS_DELETED') }}</template>
       <template #statusislastestfilerevision>{{ _t('MULTIDELETEPAGES_IS_LATEST_FILE_REVISION') }}</template>
@@ -38,10 +41,13 @@
         <template #pagetag>{{ _t('MULTIDELETEPAGES_PAGE_TAG') }}</template>
         <template #pageversion>{{ _t('MULTIDELETEPAGES_PAGE_VERSION') }}</template>
       </file-cleaning-table>
-      <spinner-loader v-if="!ready" :height="500"><spinner-loader>
+      <spinner-loader v-if="!ready" :height="500"></spinner-loader>
     </div>
     <div>
       <button v-if="isToCheck" @click="checkFiles" class="btn btn-info" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_CHECK') }}</button>
+      <button v-else-if="canBeMovedToTrash" @click="moveFilesToTrash" class="btn btn-warning" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_MOVE_TO_TRASH') }}</button>
+      <button v-else-if="canBeRestored" @click="restoreFiles" class="btn btn-primary" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_RESTORE') }}</button>
+      <button v-if="canDelete" @click="deleteFiles" class="btn btn-danger" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_DELETE') }}</button>
       <div v-if="message.length > 0" v-html="message" :class="messageClass"></div>
     </div>
 </div>

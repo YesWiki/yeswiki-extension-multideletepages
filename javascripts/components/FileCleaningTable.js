@@ -63,7 +63,15 @@ export default {
         },
         filesEquals: function(fileA,fileB){
             for (const key in fileA) {
-                if (!fileB.hasOwnProperty(key) || fileB[key] != fileA[key]){
+                if (!fileB.hasOwnProperty(key) || (key != 'pagetags' && fileB[key] != fileA[key]) ||
+                    (
+                        (key == 'pagetags') &&
+                        (
+                            (typeof fileA[key] != "object" && typeof fileB[key] != "object")||
+                            Object.keys(fileB[key]).length != Object.keys(fileA[key]).length ||
+                            Object.keys(fileA[key]).some((tagName)=>!(Object.keys(fileB[key])).includes(tagName))
+                        )
+                    )){
                     return false;
                 }
             }
@@ -190,6 +198,7 @@ export default {
             this.dataTable.rows(function ( idx, data ) {
                 return filesNames.includes(data.realname);
             }).remove()
+            this.selectedFiles = this.selectedFiles.filter((fname)=>this.$root.files.some((f)=>fname==f.realname))
         },
         updateCheckboxAfterClick: function (input, toggleValue = true){
             if (input.tagName == "INPUT"){

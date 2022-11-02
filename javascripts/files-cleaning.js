@@ -31,48 +31,55 @@ let appParams = {
         };
     },
     computed: {
-        isToCheck: function(){
-            let isToCheck = (this.selectedFiles.length != 0 && (this.selectedFiles.filter((f)=>!this.checkedFiles.includes(f)).length > 0));
-            return isToCheck;
+        canDelete: function(){
+            let fnameToRestore = this.filesToRestore.map((f)=>f.realname);
+            return this.canBeRestored && this.selectedFiles.every((fname)=>fnameToRestore.includes(fname));
         },
-    },
-    methods: {
-        checkFiles: function(){
-            
-            let filesToCheck = this.filesToDisplay(this.files,this.currentType).filter((f)=>{
+        filesToMoveToTrash: function(){
+            return this.selectedFiles.length == 0 ? [] : this.filesToDisplay(this.files,this.currentType).filter((f)=>{
+                return this.selectedFiles.includes(f.realname) && this.checkedFiles.includes(f.realname) && !f.isDeleted;
+            }).map((f)=>{
+                return {realname:f.realname,tag:f.associatedPageTag ||""}
+            })
+        },
+        filesToCheck: function(){
+            return this.selectedFiles.length == 0 ? [] : this.filesToDisplay(this.files,this.currentType).filter((f)=>{
                 return this.selectedFiles.includes(f.realname) && !this.checkedFiles.includes(f.realname) && f.associatedPageTag.length > 0;
             }).map((f)=>{
                 return {realname:f.realname,tag:f.associatedPageTag}
             })
-            if (filesToCheck.length == 0){
-                return
-            }
+        },
+        filesToRestore: function(){
+            return this.selectedFiles.length == 0 ? [] : this.filesToDisplay(this.files,this.currentType).filter((f)=>{
+                return this.selectedFiles.includes(f.realname) && this.checkedFiles.includes(f.realname) && f.isDeleted;
+            }).map((f)=>{
+                return {realname:f.realname,tag:f.associatedPageTag || ""}
+            })
+        },
+        isToCheck: function(){
+            return this.filesToCheck.length > 0;
+        },
+        canBeMovedToTrash: function(){
+            return this.selectedFiles.length != 0 && !this.isToCheck && this.filesToMoveToTrash.length > 0;
+        },
+        canBeRestored: function(){
+            return this.selectedFiles.length != 0 && !this.isToCheck && !this.canBeMovedToTrash && this.filesToRestore.length > 0;
+        },
+    },
+    methods: {
+        checkFiles: function(){
             let dataToSend = {
-                files: filesToCheck
+                files: this.filesToCheck
             };
-
-            this.updating = true;
-            this.message = this.t('checkingfiles')
-            this.messageClass = {alert:true,['alert-info']:true};
             
-            // 1. Create a new XMLHttpRequest object
-            let xhr = new XMLHttpRequest();
-            // 2. Configure it: GET-request
-            xhr.open('POST',wiki.url(`?api/files/check`));
-            let data = this.prepareFormData(dataToSend);
-            // 3. Listen load
-            xhr.onload = () =>{
-                this.importFiles(xhr);
-                this.updating = false;
-                this.message = "";
-            }
-            // 4 .listen error
-            xhr.onerror = () => {
-                this.updating = false;
-                this.message = "";
-            };
-            // 5. Send the request over the network
-            xhr.send(data);
+            this.loadAsyncCommon({
+                message: this.t('checkingfiles'),
+                class: 'alert-info',
+                method: 'POST',
+                url: `?api/files/check`,
+                removeFiles: false,
+                data: this.prepareFormData(dataToSend)
+            });
         },
         convertStatusCodeToObject: function(code){
             return {
@@ -90,6 +97,20 @@ let appParams = {
                     ? false
                     : null
                 );
+        },
+        deleteFiles: function(){
+            let dataToSend = {
+                files: this.filesToRestore
+            };
+            
+            this.loadAsyncCommon({
+                message: this.t('deletingfiles'),
+                class: 'alert-danger',
+                method: 'POST',
+                url: `?api/files/delete`,
+                removeFiles: true,
+                data: this.prepareFormData(dataToSend)
+            });
         },
         formatFile: function(file){
             return {
@@ -191,18 +212,21 @@ let appParams = {
         isTypesEmpty: function(types){
             return Object.keys(types).length == 0;
         },
-        loadFilesAsync: function(){
-            this.message = this.t('loadingfiles')
-            this.messageClass = {alert:true,['alert-info']:true};
+        loadAsyncCommon: function(options){
             this.updating = true;
             this.ready = true;
+            this.message = options.message
+            this.messageClass = {alert:true,[options.class]:true};
             
             // 1. Create a new XMLHttpRequest object
             let xhr = new XMLHttpRequest();
             // 2. Configure it: GET-request
-            xhr.open('GET',wiki.url(`?api/files`));
+            xhr.open(options.method,wiki.url(options.url));
             // 3. Listen load
             xhr.onload = () =>{
+                if (options.removeFiles){
+                    this.removeFiles(xhr);
+                }
                 this.importFiles(xhr);
                 this.updating = false;
                 this.message = "";
@@ -213,7 +237,36 @@ let appParams = {
                 this.message = "";
             };
             // 5. Send the request over the network
-            xhr.send();
+            if (options.data){
+                xhr.send(options.data);
+            } else {
+                xhr.send();
+            }
+
+        },
+        loadFilesAsync: function(){
+            this.loadAsyncCommon({
+                message: this.t('loadingfiles'),
+                class: 'alert-info',
+                method: 'GET',
+                url: `?api/files`,
+                removeFiles: false,
+                data: false
+            });
+        },
+        moveFilesToTrash: function(){
+            let dataToSend = {
+                files: this.filesToMoveToTrash
+            };
+            
+            this.loadAsyncCommon({
+                message: this.t('movingfilestotrash'),
+                class: 'alert-warning',
+                method: 'POST',
+                url: `?api/files/movetotrash`,
+                removeFiles: true,
+                data: this.prepareFormData(dataToSend)
+            });
         },
         prepareFormData(thing){
             let formData = new FormData();
@@ -224,6 +277,30 @@ let appParams = {
                 }
             }
             return formData;
+        },
+        restoreFiles: function(){
+            let dataToSend = {
+                files: this.filesToRestore
+            };
+            
+            this.loadAsyncCommon({
+                message: this.t('restoringfiles'),
+                class: 'alert-info',
+                method: 'POST',
+                url: `?api/files/restore`,
+                removeFiles: true,
+                data: this.prepareFormData(dataToSend)
+            });
+        },
+        removeFiles: function(xhr){
+            if (xhr.status == 200){
+                let responseDecoded = JSON.parse(xhr.response);
+                if (responseDecoded && typeof responseDecoded == "object" && responseDecoded.hasOwnProperty('removedFiles') && Array.isArray(responseDecoded.removedFiles)){
+                    let removedFiles = responseDecoded.removedFiles.filter((fileName)=>typeof fileName == "string");
+                    this.files = this.files.filter((f)=>!removedFiles.includes(f.realname))
+                    this.selectedFiles = this.selectedFiles.filter((fname)=>!removedFiles.includes(fname))
+                }
+            }
         },
         toPreFormData: function(thing,key =""){
             let type = typeof thing;
@@ -303,6 +380,9 @@ let appParams = {
                     }
                 });
                 this.types = newType
+                if (!Object.keys(this.types).includes(this.currentType)){
+                    this.currentType = "";
+                }
             }
         }
     },

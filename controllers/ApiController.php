@@ -40,4 +40,37 @@ class ApiController extends YesWikiController
         $files = $filesService->checkFiles($_POST);
         return new ApiResponse(['files'=>$files]);
     }
+
+    /**
+     * @Route("/api/files/movetotrash",methods={"POST"}, options={"acl":{"public","@admins"}},priority=2)
+     */
+    public function moveFilesToTrash()
+    {
+        $this->denyAccessUnlessAdmin();
+        $filesService = $this->getService(FilesService::class);
+        list('files'=>$files, 'removedFiles'=>$removedFiles) = $filesService->moveFilesToTrash($_POST);
+        return new ApiResponse(['files'=>$files,'removedFiles'=>$removedFiles]);
+    }
+
+    /**
+     * @Route("/api/files/restore",methods={"POST"}, options={"acl":{"public","@admins"}},priority=2)
+     */
+    public function restoreFiles()
+    {
+        $this->denyAccessUnlessAdmin();
+        $filesService = $this->getService(FilesService::class);
+        list('files'=>$files, 'removedFiles'=>$removedFiles) = $filesService->restoreFiles($_POST);
+        return new ApiResponse(['files'=>$files,'removedFiles'=>$removedFiles]);
+    }
+
+    /**
+     * @Route("/api/files/delete",methods={"POST"}, options={"acl":{"public","@admins"}},priority=2)
+     */
+    public function deleteFiles()
+    {
+        $this->denyAccessUnlessAdmin();
+        $filesService = $this->getService(FilesService::class);
+        list('files'=>$files, 'removedFiles'=>$removedFiles) = $filesService->restoreFiles($_POST, true);
+        return new ApiResponse(['files'=>$files,'removedFiles'=>$removedFiles]);
+    }
 }

@@ -48,14 +48,9 @@ class FilesService
         return $this->formatFiles($files, $trashFiles, $filesWithoutTagInName);
     }
 
-    public function checkFiles(array $data): array
+    public function checkFiles(array $data, bool $allowEmptyTag = false): array
     {
-        $files = (isset($data['files']) && is_array($data['files']))
-            ? array_filter($data['files'], function ($f) {
-                return is_array($f) && !empty($f['realname']) && is_string($f['realname'])
-                    && !empty($f['tag']) && is_string($f['tag']);
-            })
-            : [];
+        $files = $this->getFilesFromData($data, $allowEmptyTag);
         $newFiles = [];
         $pages = $this->pageManager->getAll();
         if (!empty($pages)) {
@@ -68,9 +63,7 @@ class FilesService
                     $file = $this->attach->decodeLongFilename($uploadDirName . '/' . $rawFile['realname']);
                     $formattedFile = $this->appendDefaultFormattedData($file);
                     $formattedFile['associatedPageTag'] = $tag;
-                    $formattedFile['isDeleted'] = !in_array($file['trashdate'], [$file['ext'],$file['ext'].'_'])
-                        ? self::STATUS_TRUE
-                        : self::STATUS_FALSE ;
+                    $formattedFile['isDeleted'] = $this->isFileDeleted($file);
                     $formattedFile['pageTags'] = $this->searchPagesWithFile($pages, $formattedFile);
                     $formattedFile['isUsed'] = !empty($formattedFile['pageTags'])
                         ? self::STATUS_TRUE
@@ -84,6 +77,95 @@ class FilesService
             $this->wiki->tag = $currentTag;
         }
         return $newFiles;
+    }
+
+    public function moveFilesToTrash(array $data): array
+    {
+        $uploadDirName =  $this->attach->GetUploadPath();
+        $rawFiles = $this->getFilesFromData($data, true);
+        $files = [];
+        $removedFiles = [];
+        $newFilesNames = [];
+        $currentTag = $this->wiki->tag;
+
+        try {
+            foreach ($rawFiles as $rawFile) {
+                $this->attach->fmDelete($rawFile['realname']);
+                $deletedFiles = glob("$uploadDirName/{$rawFile['realname']}trash*");
+                if (count($deletedFiles)>0) {
+                    $newRealname = basename($deletedFiles[0]);
+                    if (file_exists("$uploadDirName/$newRealname")) {
+                        $removedFiles[] = $rawFile['realname'];
+                        $newFilesNames[] = [
+                            'realname' => $newRealname,
+                            'tag' => $rawFile['tag'] ?? ""
+                        ];
+                    }
+                }
+            }
+            $files = $this->checkFiles([
+                'files'=> $newFilesNames
+            ], true);
+        } catch (Throwable $th) {
+            $this->wiki->tag = $currentTag;
+            throw $th;
+        }
+        $this->wiki->tag = $currentTag;
+
+        return compact(['files','removedFiles']);
+    }
+
+    public function restoreFiles(array $data, bool $eraseMode  = false): array
+    {
+        $uploadDirName =  $this->attach->GetUploadPath();
+        $rawFiles = $this->getFilesFromData($data, true);
+        $files = [];
+        $removedFiles = [];
+        $newFilesNames = [];
+        $currentTag = $this->wiki->tag;
+        $previousGetSetted = array_key_exists('file', $_GET);
+        $previousGet = $_GET['file'] ?? '';
+
+        try {
+            foreach ($rawFiles as $rawFile) {
+                $_GET['file'] = basename($rawFile['realname']);
+                if (!$eraseMode) {
+                    $this->attach->fmRestore();
+                    $newFilename = preg_replace("/trash\\d{14}$/", "", $rawFile['realname']);
+                    if (file_exists("$uploadDirName/$newFilename")) {
+                        $removedFiles[] = $rawFile['realname'];
+                        $newFilesNames[] = [
+                            'realname' => $newFilename,
+                            'tag' => $rawFile['tag'] ?? ""
+                        ];
+                    }
+                } else {
+                    $this->attach->fmErase();
+                    if (!file_exists("$uploadDirName/{$rawFile['realname']}")) {
+                        $removedFiles[] = $rawFile['realname'];
+                    }
+                }
+            }
+            $files = $this->checkFiles([
+                'files'=> $newFilesNames
+            ], true);
+        } catch (Throwable $th) {
+            $this->wiki->tag = $currentTag;
+            if ($previousGetSetted) {
+                $_GET['file'] = $previousGet;
+            } else {
+                unset($_GET['file']);
+            }
+            throw $th;
+        }
+        $this->wiki->tag = $currentTag;
+        if ($previousGetSetted) {
+            $_GET['file'] = $previousGet;
+        } else {
+            unset($_GET['file']);
+        }
+
+        return compact(['files','removedFiles']);
     }
 
     private function initAttach()
@@ -102,6 +184,31 @@ class FilesService
         $file['isUsed'] = self::STATUS_UNKNOWN;
         $file['isLatestFileRevision'] = self::STATUS_UNKNOWN;
         return $file;
+    }
+
+    protected function getFilesFromData(array $data, bool $allowEmptyTag = false): array
+    {
+        return (isset($data['files']) && is_array($data['files']))
+            ? array_filter($data['files'], function ($f) use ($allowEmptyTag) {
+                return is_array($f) && !empty($f['realname']) && is_string($f['realname'])
+                    && ($allowEmptyTag || !empty($f['tag'])) && is_string($f['tag']);
+            })
+            : [];
+    }
+
+    protected function isFileDeleted($file): int
+    {
+        return (empty($file['ext']) || empty($file['trashdate']))
+            ? (
+                preg_match("/\.[a-z0-9]+trash\d{14}/", $file['realname'])
+                ? self::STATUS_TRUE
+                : self::STATUS_UNKNOWN
+            )
+            : (
+                !in_array($file['trashdate'], [$file['ext'],$file['ext'].'_'])
+                    ? self::STATUS_TRUE
+                    : self::STATUS_FALSE
+            );
     }
 
     /**
@@ -152,7 +259,7 @@ class FilesService
         foreach ($filesWithoutTagInName as $file) {
             $formattedFile = $this->appendDefaultFormattedData($file);
             $formattedFile['pageTags'] = $file['pageTags'];
-            $formattedFile['isDeleted'] = self::STATUS_FALSE;
+            $formattedFile['isDeleted'] = $this->isFileDeleted($file);
             $formattedFile['isUsed'] = (empty($file['pageTags']))
                 ? self::STATUS_FALSE
                 : self::STATUS_TRUE ;
@@ -243,12 +350,26 @@ class FilesService
     {
         $uploadDirName =  $this->attach->GetUploadPath();
         $fullfilename = (!empty($file['ext']) && !empty($file['name'])) ? ($file['name'].'.'.$file['ext']) : $file['realname'];
+        $notDeletedRealName = $this->isFileDeleted($file) === self::STATUS_TRUE
+            ? (
+                (
+                    !empty($file['associatedPageTag']) &&
+                    strpos($file['realname'], $file['associatedPageTag'].'_') === 0 &&
+                    strpos($file['name'], $file['associatedPageTag'].'_') === false
+                ) ? "{$file['associatedPageTag']}_" : ""
+            )
+                . "{$file['name']}_{$file['datepage']}_{$file['dateupload']}.{$file['ext']}"
+                . (strpos($file['realname'], ".{$file['ext']}_trash") !== false ? "_" : "")
+            : $file['realname'];
         $tests = [
             'page content' => '{{(attach|section)[^}]*'.preg_quote("file=\"$fullfilename\"", '/'),
             'textarea field content wikimode' => preg_quote(substr(json_encode("{{attach"), 1, -1), '/').'[^}]*'.preg_quote(substr(json_encode("file=\"$fullfilename\""), 1, -1), '/'),
-            'textarea field content html mode' => preg_quote(substr(json_encode("src=\"$uploadDirName/{$file['realname']}\""), 1, -1), '/'),
-            'image ou file field content' => preg_quote("\":\"{$file['realname']}\"", '/'),
+            'textarea field content html mode' => preg_quote(substr(json_encode("src=\"$uploadDirName/$notDeletedRealName\""), 1, -1), '/'),
+            'image ou file field content' => preg_quote("\":\"$notDeletedRealName\"", '/'),
         ];
+        if (!empty($file['associatedPageTag'])) {
+            $tests['page content from other page'] = '{{(attach|section)[^}]*'.preg_quote("file=\"{$file['associatedPageTag']}/$fullfilename\"", '/');
+        }
         $foundPagesTags = [];
         foreach ($pages as $page) {
             $this->testPage($tests, $page, $foundPagesTags, $file);
