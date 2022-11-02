@@ -13,6 +13,7 @@ namespace YesWiki\Multideletepages\Service;
 
 use attach;
 use Throwable;
+use YesWiki\Bazar\Service\EntryManager;
 use YesWiki\Core\Service\PageManager;
 use YesWiki\Wiki;
 
@@ -24,13 +25,16 @@ class FilesService
     public const STATUS_TRUE = 1;
 
     protected $attach;
+    protected $entryManager;
     protected $pageManager;
     protected $wiki;
 
     public function __construct(
+        EntryManager $entryManager,
         PageManager $pageManager,
         Wiki $wiki,
     ) {
+        $this->entryManager = $entryManager;
         $this->pageManager = $pageManager;
         $this->wiki = $wiki;
         $this->initAttach();
@@ -42,9 +46,10 @@ class FilesService
         if (empty($pages)) {
             return [];
         }
+        $entriesTags = $this->entryManager->getAllEntriesTags();
         $files = $this->getFilesFromPages($pages, false);
         $trashFiles = $this->getFilesFromPages($pages, true);
-        $filesWithoutTagInName = $this->getFilesWithoutTagInName($pages, $files, $trashFiles);
+        $filesWithoutTagInName = $this->getFilesWithoutTagInName($pages, $entriesTags, $files, $trashFiles);
         return $this->formatFiles($files, $trashFiles, $filesWithoutTagInName);
     }
 
@@ -53,6 +58,7 @@ class FilesService
         $files = $this->getFilesFromData($data, $allowEmptyTag);
         $newFiles = [];
         $pages = $this->pageManager->getAll();
+        $entriesTags = $this->entryManager->getAllEntriesTags();
         if (!empty($pages)) {
             $uploadDirName =  $this->attach->GetUploadPath();
             $currentTag = $this->wiki->tag;
@@ -64,7 +70,7 @@ class FilesService
                     $formattedFile = $this->appendDefaultFormattedData($file);
                     $formattedFile['associatedPageTag'] = $tag;
                     $formattedFile['isDeleted'] = $this->isFileDeleted($file);
-                    $formattedFile['pageTags'] = $this->searchPagesWithFile($pages, $formattedFile);
+                    $formattedFile['pageTags'] = $this->searchPagesWithFile($pages, $entriesTags, $formattedFile);
                     $formattedFile['isUsed'] = !empty($formattedFile['pageTags'])
                         ? self::STATUS_TRUE
                         : self::STATUS_FALSE ;
@@ -309,11 +315,12 @@ class FilesService
     /**
      * Get files without tag in name
      * @param array $pages (from PageManager::getAll())
+     * @param array $entriesTags (from EntryManager::getAllEntriesTags())
      * @param array $files
      * @param array $trashFiles
      * @return array $filesWithoutTagInName
      */
-    protected function getFilesWithoutTagInName(array $pages, array $files, array $trashFiles): array
+    protected function getFilesWithoutTagInName(array $pages, array $entriesTags, array $files, array $trashFiles): array
     {
         $filesWithoutTagInName = [];
         $realnameFilesWithTag = [];
@@ -335,7 +342,7 @@ class FilesService
             }
         }
         foreach ($filesWithoutTagInName as $idx => $file) {
-            $filesWithoutTagInName[$idx]['pageTags'] = $this->searchPagesWithFile($pages, $file);
+            $filesWithoutTagInName[$idx]['pageTags'] = $this->searchPagesWithFile($pages, $entriesTags, $file);
         }
         return $filesWithoutTagInName;
     }
@@ -343,10 +350,11 @@ class FilesService
     /**
      * search files in pages
      * @param array $pages (from PageManager::getAll())
+     * @param array $entriesTags (from EntryManager::getAllEntriesTags())
      * @param array $file
      * @return array $pagesTag
      */
-    protected function searchPagesWithFile(array $pages, array $file): array
+    protected function searchPagesWithFile(array $pages, array $entriesTags, array $file): array
     {
         $uploadDirName =  $this->attach->GetUploadPath();
         $fullfilename = (!empty($file['ext']) && !empty($file['name'])) ? ($file['name'].'.'.$file['ext']) : $file['realname'];
@@ -362,17 +370,25 @@ class FilesService
                 . (strpos($file['realname'], ".{$file['ext']}_trash") !== false ? "_" : "")
             : $file['realname'];
         $tests = [
-            'page content' => '{{(attach|section)[^}]*'.preg_quote("file=\"$fullfilename\"", '/'),
-            'textarea field content wikimode' => preg_quote(substr(json_encode("{{attach"), 1, -1), '/').'[^}]*'.preg_quote(substr(json_encode("file=\"$fullfilename\""), 1, -1), '/'),
-            'textarea field content html mode' => preg_quote(substr(json_encode("src=\"$uploadDirName/$notDeletedRealName\""), 1, -1), '/'),
-            'image ou file field content' => preg_quote("\":\"$notDeletedRealName\"", '/'),
+            'same tag' => [
+                'page' => '{{(attach|section)[^}]*'.preg_quote("file=\"$fullfilename\"", '/'),
+                'entry' => [
+                    'textarea - wikimode' => preg_quote(substr(json_encode("{{attach"), 1, -1), '/').'[^}]*'.preg_quote(substr(json_encode("file=\"$fullfilename\""), 1, -1), '/'),
+                ]
+            ],
+            'entry' => [
+                'textarea - htmlmode' => preg_quote(substr(json_encode("src=\"$uploadDirName/$notDeletedRealName\""), 1, -1), '/'),
+                'image or file field' => preg_quote("\":\"$notDeletedRealName\"", '/'),
+            ],
+            'page' => []
         ];
         if (!empty($file['associatedPageTag'])) {
-            $tests['page content from other page'] = '{{(attach|section)[^}]*'.preg_quote("file=\"{$file['associatedPageTag']}/$fullfilename\"", '/');
+            $tests['page'][] = '{{(attach|section)[^}]*'.preg_quote("file=\"{$file['associatedPageTag']}/$fullfilename\"", '/');
+            $tests['entry']['textarea - wikimode'] = preg_quote(substr(json_encode("{{attach"), 1, -1), '/').'[^}]*'.preg_quote(substr(json_encode("file=\"{$file['associatedPageTag']}/$fullfilename\""), 1, -1), '/');
         }
         $foundPagesTags = [];
         foreach ($pages as $page) {
-            $this->testPage($tests, $page, $foundPagesTags, $file);
+            $this->testPage($tests, $page, $foundPagesTags, $file, $entriesTags);
         }
         if (empty($foundPagesTags) && !empty($file['associatedPageTag'])) {
             $revisions = $this->pageManager->getRevisions($file['associatedPageTag']);
@@ -380,7 +396,7 @@ class FilesService
                 foreach ($revisions as $revision) {
                     $page = $this->pageManager->getById($revision['id']);
                     if (!empty($page)) {
-                        $this->testPage($tests, $page, $foundPagesTags, $file);
+                        $this->testPage($tests, $page, $foundPagesTags, $file, $entriesTags);
                     }
                 }
             }
@@ -388,12 +404,32 @@ class FilesService
         return $foundPagesTags;
     }
 
-    private function testPage(array $tests, array $page, array &$foundPagesTags, array $file)
+    private function testPage(array $tests, array $page, array &$foundPagesTags, array $file, array $entriesTags)
     {
         $pageTime = $this->attach->convertDate($page['time']);
         if (empty($file['datepage'])|| ($file['datepage'] <= $pageTime)) {
+            $localTests = [];
+            if (in_array($page['tag'], $entriesTags)) {
+                foreach ($tests['entry'] as $test) {
+                    $localTests[] = $test;
+                }
+                if (!empty($file['associatedPageTag']) && $file['associatedPageTag'] == $page['tag']) {
+                    foreach ($tests['same tag']['entry'] as $test) {
+                        $localTests[] = $test;
+                    }
+                }
+            } else {
+                foreach ($tests['page'] as $test) {
+                    $localTests[] = $test;
+                }
+                if (!empty($file['associatedPageTag']) && $file['associatedPageTag'] == $page['tag']) {
+                    foreach ($tests['same tag']['page'] as $test) {
+                        $localTests[] = $test;
+                    }
+                }
+            }
             $found = false;
-            foreach ($tests as $test) {
+            foreach ($localTests as $test) {
                 if (!$found && preg_match("/.*$test.*/", $page['body'])) {
                     $found = true;
                     if (!isset($foundPagesTags[$page['tag']])) {
