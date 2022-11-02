@@ -39,10 +39,18 @@ let appParams = {
     methods: {
         checkFiles: function(){
             
-            let filesToCheck = this.selectedFiles.filter((f)=>!this.checkedFiles.includes(f));
+            let filesToCheck = this.filesToDisplay(this.files,this.currentType).filter((f)=>{
+                return this.selectedFiles.includes(f.realname) && !this.checkedFiles.includes(f.realname) && f.associatedPageTag.length > 0;
+            }).map((f)=>{
+                return {realname:f.realname,tag:f.associatedPageTag}
+            })
             if (filesToCheck.length == 0){
                 return
             }
+            let dataToSend = {
+                files: filesToCheck
+            };
+
             this.updating = true;
             this.message = this.t('checkingfiles')
             this.messageClass = {alert:true,['alert-info']:true};
@@ -51,6 +59,7 @@ let appParams = {
             let xhr = new XMLHttpRequest();
             // 2. Configure it: GET-request
             xhr.open('POST',wiki.url(`?api/files/check`));
+            let data = this.prepareFormData(dataToSend);
             // 3. Listen load
             xhr.onload = () =>{
                 this.importFiles(xhr);
@@ -63,7 +72,7 @@ let appParams = {
                 this.message = "";
             };
             // 5. Send the request over the network
-            xhr.send();
+            xhr.send(data);
         },
         convertStatusCodeToObject: function(code){
             return {
@@ -93,10 +102,7 @@ let appParams = {
                 realname: file.realname,
                 uploadtime: file.dateupload || "",
                 pageversion: file.datepage || "",
-                pagetags: [
-                    ...((typeof file.associatedPageTag == "string" && file.associatedPageTag.length > 0) ? [file.associatedPageTag]:[]),
-                    ...((file.pageTags && Array.isArray(file.pageTags)) ? file.pageTags:[])
-                ],
+                pagetags: (typeof file.pageTags == "object") ? file.pageTags :{},
                 associatedPageTag: (typeof file.associatedPageTag == "string") ? file.associatedPageTag : ""
             };
         },
@@ -156,18 +162,25 @@ let appParams = {
                         }
                         return newFile;
                     }).filter((e)=>e !== null);
-                    let newFilesRealNames = newFiles.map((f)=>f.realname)
-                    let oldFiles = this.files.filter((f)=>!newFilesRealNames.includes(f.realname))
-                    this.files = [...oldFiles,...newFiles];
-                    if (newFiles.length > 0){
-                        let newType = this.types;
-                        newFiles.forEach((f)=>{
-                            let statusCode = this.getStatusCode(f);
-                            if (!newType.hasOwnProperty(statusCode)){
-                                newType[statusCode] = this.getStatusLabelFromCode(statusCode);
+                    let oldFilesRealNames = this.files.map((f)=>f.realname)
+                    let filesToAppend = [];
+                    let idxToFollow = [];
+                    newFiles.forEach((f)=>{
+                        let indexInFiles = oldFilesRealNames.findIndex((e)=>(e==f.realname))
+                        if (indexInFiles == -1){
+                            // new file
+                            filesToAppend.push(f);
+                        } else {
+                            if (f.isLatestFileRevision === null){
+                                f.isLatestFileRevision = this.files[indexInFiles].isLatestFileRevision
                             }
-                        });
-                        this.types = newType
+                            idxToFollow.push(indexInFiles);
+                            this.$set(this.files,indexInFiles,f)
+                        }
+                    });
+                    this.files = [...this.files,...filesToAppend];
+                    if (newFiles.length > 0){
+                        this.updateTypes();
                     }
                 }
             }
@@ -202,6 +215,71 @@ let appParams = {
             // 5. Send the request over the network
             xhr.send();
         },
+        prepareFormData(thing){
+            let formData = new FormData();
+            if (typeof thing == "object"){
+                let preForm =this.toPreFormData(thing);
+                for (const key in preForm) {
+                    formData.append(key,preForm[key]);
+                }
+            }
+            return formData;
+        },
+        toPreFormData: function(thing,key =""){
+            let type = typeof thing;
+            switch (type) {
+                case 'boolean':
+                case 'number':
+                case 'string':
+                    return {
+                        [key]:thing
+                    };
+                case 'object':
+                    if (Object.keys(thing).length > 0){
+                        let result = {};
+                        for (const propkey in thing) {
+                            result = {
+                                ...result,
+                                ...this.toPreFormData(
+                                    thing[propkey],
+                                    (key.length == 0) ? propkey : `${key}[${propkey}]`
+                                )
+                            }
+                        }
+                        return result;
+                    } else if (thing === null) {
+                        return {
+                            [key]:null
+                        };
+                    } else {
+                        return {
+                            [key]: []
+                        };
+                    }
+                
+                case 'array':
+                    if (thing.length == 0){
+                        return {
+                            [key]: []
+                        };
+                    }
+                    let result = {};
+                    thing.forEach((val,propkey)=>{
+                        result = {
+                            ...result,
+                            ...this.toPreFormData(
+                                val,
+                                (key.length == 0) ? propkey : `${key}[${propkey}]`
+                            )
+                        }
+                    });
+                    return result;
+                default:
+                    return {
+                        [key]:null
+                    };
+            }
+        },
         t: function(text, replacements = {}){
             if (this.translations.hasOwnProperty(text)){
                 let message = this.translations[text]
@@ -215,6 +293,18 @@ let appParams = {
                 return "";
             }
         },
+        updateTypes: function(){
+            if (this.files.length > 0){
+                let newType = {};
+                this.files.forEach((f)=>{
+                    let statusCode = this.getStatusCode(f);
+                    if (!newType.hasOwnProperty(statusCode)){
+                        newType[statusCode] = this.getStatusLabelFromCode(statusCode);
+                    }
+                });
+                this.types = newType
+            }
+        }
     },
     mounted(){
         $(isVueJS3 ? this.$el.parentNode : this.$el).on('dblclick',function(e) {

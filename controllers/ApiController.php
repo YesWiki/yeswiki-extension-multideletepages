@@ -29,4 +29,15 @@ class ApiController extends YesWikiController
         $files = $filesService->getFiles();
         return new ApiResponse(['files'=>$files]);
     }
+
+    /**
+     * @Route("/api/files/check",methods={"POST"}, options={"acl":{"public","@admins"}},priority=2)
+     */
+    public function checkFiles()
+    {
+        $this->denyAccessUnlessAdmin();
+        $filesService = $this->getService(FilesService::class);
+        $files = $filesService->checkFiles($_POST);
+        return new ApiResponse(['files'=>$files]);
+    }
 }

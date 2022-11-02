@@ -61,6 +61,14 @@ export default {
                 this.updateCheckboxAllAfterClick(input,false)
             }
         },
+        filesEquals: function(fileA,fileB){
+            for (const key in fileA) {
+                if (!fileB.hasOwnProperty(key) || fileB[key] != fileA[key]){
+                    return false;
+                }
+            }
+            return Object.keys(fileA).length ==  Object.keys(fileB).length;
+        },
         formatAFile: function(file){
             return {
                 name: file.name || file.realname || "",
@@ -68,7 +76,7 @@ export default {
                 isUsed: file.isUsed,
                 isLatestFileRevision: file.isLatestFileRevision,
                 realname: file.realname || "",
-                pagetags: file.pagetags || [],
+                pagetags: typeof file.pagetags == "object" ? file.pagetags :  {},
                 uploadtime: file.uploadtime || "",
                 pageversion: file.pageversion || "",
                 associatedPageTag: file.associatedPageTag || "",
@@ -136,10 +144,28 @@ export default {
                             data:"pagetags",
                             title:this.fromSlot("pagetag")+` (${this.fromSlot("pageversion")})`,
                             render: function ( tags, idx, file ) {
-                                return tags.map((tag)=>{
-                                    let rev = (file.isUsed == 0 && file.associatedPageTag == tag && file.pageversion) ? ` (${file.pageversion})`: '';
-                                    return `<a class="modalbox" data-iframe="1" data-size="modal-lg" href="${wiki.url(tag+'/iframe')}" title="${tag}">${tag}${rev}</a>`;
-                                }).join('');
+                                let localTags = (typeof tags != "object") ? {} : tags;
+                                if (file.associatedPageTag.length > 0 && !localTags.hasOwnProperty(file.associatedPageTag)){
+                                    localTags[file.associatedPageTag] = [{
+                                        time: 2,
+                                        latest: 2
+                                    }];
+                                }
+                                return Object.keys(localTags).map((tag)=>{
+                                    let rev ="";
+                                    let params = {};
+                                    if (file.isUsed == 1){
+                                        let found = false;
+                                        localTags[tag].forEach((revision)=>{
+                                            if (!found && revision.latest === false && typeof revision.time == "string"){
+                                                found = true;
+                                                rev = ` (${revision.time})`;
+                                                params.time = revision.time;
+                                            }
+                                        })
+                                    }
+                                    return `<a class="modalbox" data-iframe="1" data-size="modal-lg" href="${wiki.url(tag+'/iframe',params)}" title="${tag}">${tag}${rev}</a>`;
+                                }).join('<br/>');
                             },
                             className: "files-cleaning-table-break-word-column"
                         }
@@ -209,7 +235,7 @@ export default {
                     }
                 }
             }
-        }
+        },
     },
     watch: {
         domContentLoaded: function(){
@@ -218,21 +244,26 @@ export default {
             }
         },
         formattedFiles: function(newVals,oldVals){
-            let newValsFiles = newVals.map((e)=>e.realname)
-            let oldValsFiles = oldVals.map((e)=>e.realname)
             if (this.dataTableInternal){
-                let newFiles = newVals.filter((e)=>!oldValsFiles.includes(e.realname))
-                if (newFiles.length > 0){
-                    this.addNewFiles(newFiles)
-                }
-                let oldFiles = oldVals.filter((e)=>!newValsFiles.includes(e.realname))
-                if (oldFiles.length > 0){
-                    this.removeOldFiles(oldFiles)
-                }
-                if (newFiles.length > 0 || oldFiles.length > 0){
+                let draw = false;
+                [
+                    {valsToFilter: oldVals,valsToCompare: newVals,func:this.removeOldFiles},
+                    {valsToFilter: newVals,valsToCompare: oldVals,func:this.addNewFiles}
+                ].forEach((d)=>{
+                    let fileNamesToCompare = d.valsToCompare.map((e)=>e.realname)
+                    let files = d.valsToFilter.filter((f)=>{
+                        let idx = fileNamesToCompare.findIndex((fname)=>fname==f.realname)
+                        return idx == -1 || !this.filesEquals(f,d.valsToCompare[idx])
+                    });
+                    if (files.length > 0){
+                        d.func(files)
+                        draw = true
+                    }
+                })
+                if (draw){
+                    $(this.dataTable.header()).find('input').first().get(0).checked = false;
                     this.dataTable.draw();
                 }
-                $(this.dataTable.header()).find('input').first().get(0).checked = false;
             }
         },
         selectedFiles: function(){
