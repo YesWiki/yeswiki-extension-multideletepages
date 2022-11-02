@@ -1,0 +1,53 @@
+{# # This file is part of the YesWiki Extension multideletepages.
+# Authors : see README.md file that was distributed with this source code.
+# For the full copyright and license information, please view the LICENSE
+# file that was distributed with this source code. #}
+
+{{ include_javascript('javascripts/vendor/datatables-full/jquery.dataTables.min.js') }}
+{{ include_css('styles/vendor/datatables-full/dataTables.bootstrap.min.css') }}
+{{ include_javascript('javascripts/vendor/vue/vue.js') }}
+{{ include_javascript('tools/multideletepages/javascripts/files-cleaning.js',false,true) }}
+{{ include_css('tools/multideletepages/styles/files-cleaning.css',) }}
+
+<div class="files-cleaning-container">
+    <translations>
+      <template #loadingfiles>{{ _t('MULTIDELETEPAGES_LOADING_FILES') }}</template>
+      <template #checkingfiles>{{ _t('MULTIDELETEPAGES_CHECKING_FILES') }}</template>
+      <template #movingfilestotrash>{{ _t('MULTIDELETEPAGES_MOVING_FILES_TO_TRASH') }}</template>
+      <template #restoringfiles>{{ _t('MULTIDELETEPAGES_RESTORING') }}</template>
+      <template #deletingfiles>{{ _t('MULTIDELETEPAGES_DELETING') }}</template>
+      <template #statusassociatedtotag>{{ _t('MULTIDELETEPAGES_ASSOCIATED_TO_TAG') }}</template>
+      <template #statusisdeleted>{{ _t('MULTIDELETEPAGES_IS_DELETED') }}</template>
+      <template #statusislastestfilerevision>{{ _t('MULTIDELETEPAGES_IS_LATEST_FILE_REVISION') }}</template>
+      <template #statusisnotused>{{ _t('MULTIDELETEPAGES_IS_NOT_USED') }}</template>
+      <template #statusisused>{{ _t('MULTIDELETEPAGES_IS_USED') }}</template>
+      <template #statustocheck>{{ _t('MULTIDELETEPAGES_TO_CHECK') }}</template>
+    </translations>
+    <h2>{{ _t('MULTIDELETEPAGES_FILES_DIR_LISTING') }}</h2>
+    <div>
+      <div v-if="!isTypesEmpty(types)" class="input-group mb-3 col-sm-5 pull-left">
+          <div class="input-group-prepend no-flex-shrink">
+              <span class="input-group-text">{{ _t('MULTIDELETEPAGES_SELECT_TYPES') }}&nbsp;:&nbsp;</span>
+          </div>
+          <select class="form-control" v-if="ready" ref="chooseType" v-model="currentType" name="chooseType">
+              <option value=""></option>
+              <option v-for="(label,type) in types" :value="type" v-html="label"></option>
+          </select>
+      </div>
+      <file-cleaning-table class="table-striped table-condensed table-hover" :files="filesToDisplay(files,currentType)" :dom-content-loaded="dOMContentLoaded">
+        <template #status>{{ _t('MULTIDELETEPAGES_STATUS') }}</template>
+        <template #name>{{ _t('MULTIDELETEPAGES_NAME') }}</template>
+        <template #uploadtime>{{ _t('MULTIDELETEPAGES_UPLOAD_TIME') }}</template>
+        <template #pagetag>{{ _t('MULTIDELETEPAGES_PAGE_TAG') }}</template>
+        <template #pageversion>{{ _t('MULTIDELETEPAGES_PAGE_VERSION') }}</template>
+      </file-cleaning-table>
+      <spinner-loader v-if="!ready" :height="500"></spinner-loader>
+    </div>
+    <div>
+      <button v-if="isToCheck" @click="checkFiles" class="btn btn-info" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_CHECK') }}</button>
+      <button v-else-if="canBeMovedToTrash" @click="moveFilesToTrash" class="btn btn-warning" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_MOVE_TO_TRASH') }}</button>
+      <button v-else-if="canBeRestored" @click="restoreFiles" class="btn btn-primary" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_RESTORE') }}</button>
+      <button v-if="canDelete" @click="deleteFiles" class="btn btn-danger" :disabled="updating" :style="updating ? {cursor:'wait'} : false">{{ _t('MULTIDELETEPAGES_DELETE') }}</button>
+      <div v-if="message.length > 0" v-html="message" :class="messageClass"></div>
+    </div>
+</div>
