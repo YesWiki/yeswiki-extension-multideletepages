@@ -115,26 +115,30 @@ let appParams = {
                   return;
               }
           let pageAdminApp = this;
-          $.ajax({
-              method: "GET",
-              url: wiki.url(`${page.tag}/deletepage`),
-              success: function(data){
-                let csrfTokenMatch = data.match(/name=\"csrf-token\" value=\"([^\"]*)\"/);
-                if (csrfTokenMatch[1] == undefined || csrfTokenMatch[1].length == 0){
-                    pageAdminApp.message = `Suppression impossible de ${page.tag} (mauvais jeton csrf)`;
-                    pageAdminApp.messageClass = {alert:true,['alert-danger']:true};
-                    pageAdminApp.updating = false;
-                } else {
-                    pageAdminApp.deletePage(page,csrfTokenMatch[1],next);
+          if ('antiCsrfToken' in wiki && wiki.antiCsrfToken.length > 0){
+            pageAdminApp.deletePage(page,wiki.antiCsrfToken,next)
+          } else {
+            $.ajax({
+                method: "GET",
+                url: wiki.url(`${page.tag}/deletepage`),
+                success: function(data){
+                  let csrfTokenMatch = data.match(/name=\"csrf-token\" value=\"([^\"]*)\"/);
+                  if (csrfTokenMatch[1] == undefined || csrfTokenMatch[1].length == 0){
+                      pageAdminApp.message = `Suppression impossible de ${page.tag} (mauvais jeton csrf)`;
+                      pageAdminApp.messageClass = {alert:true,['alert-danger']:true};
+                      pageAdminApp.updating = false;
+                  } else {
+                      pageAdminApp.deletePage(page,csrfTokenMatch[1],next);
+                  }
+                },
+                error: function(xhr,status,error){
+                  pageAdminApp.message = `Suppression impossible de ${page.tag}`;
+                  pageAdminApp.messageClass = {alert:true,['alert-danger']:true};
+                  pageAdminApp.updating = false;
                 }
-              },
-              error: function(xhr,status,error){
-                pageAdminApp.message = `Suppression impossible de ${page.tag}`;
-                pageAdminApp.messageClass = {alert:true,['alert-danger']:true};
-                pageAdminApp.updating = false;
-              }
-          });
-          },
+            });
+          }
+        },
         selectCustom: function(){
           let pageAdminApp = this;
                pageAdminApp.selectedPagesToDelete = [];
